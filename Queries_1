@@ -1,0 +1,31 @@
+/* Count of loan numbers per event and per portfolio from the 1st of the year to today's date */ 
+
+SELECT a.Portfolio, a.Event, count(a.loannumber) as 'Count of Loan Number'
+FROM RnRTriggersLeads a
+JOIN RnRTriggersAppends B
+ON A.IRLeadID = B.IRLeadID
+WHERE LeadReceivedDate between '2021-01-01' and CAST(GETDATE() as DATE) 
+GROUP BY A.Portfolio, A.Event
+ORDER BY 1 desc
+
+/* Pulling master IDs for known records with created lookup key */
+
+  SELECT
+    b.master_person_id,
+    b.master_address_id,
+    a.*
+  FROM prescreen.experian_spf_input a
+  JOIN globalid.lookup_table b
+    ON concat_ws('',a.CON_FIRST_NAME,a.CON_LAST_NAME,a.ADDRESS,
+ a.CITY_NAME ,a.STATE_CD ,a.ZIP_CD ,a.ZIP_PLUS4_CD) = b.lookup_key
+
+
+/* Generating new master ids for new records */
+
+SELECT
+  ROW_NUMBER() OVER (
+    ORDER BY a.cass_zip
+   ) master_address_id,
+  a.cass_address,
+  a.cass_zip
+FROM master_address_new a
